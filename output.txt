@@ -1,0 +1,2 @@
+Hành trình tối ưu (95 mật):
+A -> D -> C -> B -> A
