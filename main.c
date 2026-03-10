@@ -145,7 +145,7 @@ int main(void) {
     while (fscanf(file, " %c %c %d", &u, &v, &w) == 3) {
         int iu = indexMap[(unsigned char)u];
         int iv = indexMap[(unsigned char)v];
-        weight[iu][iv] = weight[iv][iu] = w;
+        weight[iu][iv] = weight[iv][iu] = weight[iu][iv]>w?weight[iu][iv]:w;
     }
     fclose(file);
 
