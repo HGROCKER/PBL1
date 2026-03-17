@@ -16,6 +16,8 @@ int indexMap[256];          // ánh xạ ký tự -> chỉ số
 char vertexChars[256];      // danh sách ký tự theo chỉ số
 int vertexCount = 0;
 
+//Đây là hàm nhập các đỉnh mới với các chỉ số mới. VD: nhập A B B D C -> ['A','B','D','C']
+// Tác dụng cuẻ indexMap : giống hashtable (chỉ số là các cụm khóa dạng string, tuy nhiên ở đây sẽ đơn giản là các char -> lưu được từ 0->255 (ví dụ a có giá trị 97))
 int getIndex(char c) {
     unsigned char uc = (unsigned char)c;
     if (indexMap[uc] == -1) {
@@ -30,22 +32,24 @@ int getIndex(char c) {
 // outPath phải có kích thước ≥ vertexCount+1 để lưu đường đi (kết thúc trở về
 // đỉnh bắt đầu).
 int solveTSP(int startIndex, int *outPath) {
-    int n = vertexCount;
-    int fullMask = (1 << n) - 1;
-
-    int **dp = malloc((1 << n) * sizeof(int *));
-    int **parent = malloc((1 << n) * sizeof(int *));
-    for (int mask = 0; mask < (1 << n); mask++) {
-        dp[mask] = malloc(n * sizeof(int));
-        parent[mask] = malloc(n * sizeof(int));
+    int n = vertexCount;//...Count là số lượng đỉnh được tính từ các lệnh getIndex
+    int fullMask = (1 << n) - 1; //n đính -> mỗi đỉnh có 2 trạng thái là đi qua hoặc chưa đi qua 
+                                 //-> ánh xạ tới 1 bit -> n bít -> biêu diễn qua số nguyên thì là 2^n trường hợp (có giá trị 0 -> giá trị max = 2^n-1)
+                                 // số này thể hiện sang bit thì là 11111...1 với n số 1.
+    int **dp = malloc((1 << n) * sizeof(int *));  //mảng chứa giá trị lớn nhất của các trường hợp bit ví dụ 111011 thì có giá trị lớn nhất
+                                                 //khi đi qua các đỉnh 1 đó(với thứ tự bất kì) đã được tìm trước đó
+    int **parent = malloc((1 << n) * sizeof(int *));// Mảng truy vết, khi có một giá trị lớn nhất thì đồng thời sẽ lưu lại đỉnh đi đến hiện tại ở trước đó.
+    for (int mask = 0; mask < (1 << n); mask++) { //quét qua mọi trường hơp có thể xã ra từ 00000.. -> 1111 hay từ giá trị 0->2^n-1
+        dp[mask] = malloc(n * sizeof(int)); // mỗi trường hợp sẽ chứa 1 mảng n ptu
+        parent[mask] = malloc(n * sizeof(int));// tương tự
         for (int i = 0; i < n; i++) {
-            dp[mask][i] = INT_MIN / 2;
-            parent[mask][i] = -1;
+            dp[mask][i] = INT_MIN / 2; //INT_MIN / 2  để khi cộng 2 phần tử dp[i][j] với nhau thì sẽ không bị tràn, đồng thời cũng biểu thị giá trị nhỏ nhất
+                                        //thể hiện tại trường các đỉnh giá trị bit là 1 trong với giá trị nguyên mask đã được đi qua có 1 mảng của giá trị gì đây của các đỉnh
+            parent[mask][i] = -1;      //thể hiện các trường hợp hiện tại chưa có đỉnh nào đi tới.
         }
     }
 
-    dp[1 << startIndex][startIndex] = 0;
-
+    dp[1 << startIndex][startIndex] = 0; //1 << startIndex thể hiện bit vị trí start... được bật, còn lại thì không, ý trường hợp chỉ bit bắt 
     for (int mask = 0; mask < (1 << n); mask++) {
         if (!(mask & (1 << startIndex))) continue;
         for (int i = 0; i < n; i++) {
