@@ -3,14 +3,6 @@
 #include <string.h>
 #include <limits.h>
 
-// -----------------------------------------------------------------------------
-// Mô tả bài toán:
-// Cho một đồ thị vô hướng, mỗi cạnh có trọng số (lượng mật).
-// Ong bắt đầu từ một đỉnh cố định, đi qua mỗi đỉnh chính xác một lần
-// và quay về điểm xuất phát sao cho tổng lượng mật thu được là tối đa.
-// Đây là phiên bản tối đa của bài toán TSP (Traveling Salesman Problem).
-// -----------------------------------------------------------------------------
-
 int **weight;               // ma trận trọng số
 int indexMap[256];          // ánh xạ ký tự -> chỉ số
 char vertexChars[256];      // danh sách ký tự theo chỉ số
@@ -28,10 +20,8 @@ int getIndex(char c) {
     return indexMap[uc];
 }
 
-// Hàm giải TSP bằng lập trình động bitmask, trả về tổng mật lớn nhất.
-// outPath phải có kích thước ≥ vertexCount+1 để lưu đường đi (kết thúc trở về
-// đỉnh bắt đầu).
-int solveTSP(int startIndex, int *outPath) {
+int solve(int startIndex, int *outPath) {
+    //startIndex là chỉ số của đỉnh bắt đầu, outPath là mảng chứa đường đi tối ưu sau khi giải xong
     int n = vertexCount;//...Count là số lượng đỉnh được tính từ các lệnh getIndex
     int fullMask = (1 << n) - 1; //n đính -> mỗi đỉnh có 2 trạng thái là đi qua hoặc chưa đi qua 
                                  //-> ánh xạ tới 1 bit -> n bít -> biêu diễn qua số nguyên thì là 2^n trường hợp (có giá trị 0 -> giá trị max = 2^n-1)
@@ -48,11 +38,12 @@ int solveTSP(int startIndex, int *outPath) {
             parent[mask][i] = -1;      //thể hiện các trường hợp hiện tại chưa có đỉnh nào đi tới.
         }
     }
-
+  
     dp[1 << startIndex][startIndex] = 0; //1 << startIndex thể hiện bit vị trí start... được bật, còn lại thì không, ý trường hợp chỉ bit bắt 
-    for (int mask = 0; mask < (1 << n); mask++) {
-        if (!(mask & (1 << startIndex))) continue;
-        for (int i = 0; i < n; i++) {
+    printf("Starting DP with start index: %d\n", startIndex);
+    for (int mask = 0; mask < (1 << n); mask++) { //duyet qua mọi trường hợp có thể xảy ra từ 0000.. -> 1111..
+        if (!(mask & (1 << startIndex))) {mask|= (1<<startIndex - 1); continue;} //nếu trường hợp hiện tại chưa có bit startIndex thì bật nó lên và bỏ qua trường hợp này luôn vì không hợp lệ(vi du: 1110000 la chua bat bit 3 thi ta chinh len 1110111 thi loop tiep se la 1110111 [bo qua loop khong can thiet])
+        for (int i = 0; i < n; i++) { //
             if (!(mask & (1 << i))) continue;
             if (dp[mask][i] <= INT_MIN / 4) continue;
             for (int j = 0; j < n; j++) {
@@ -155,7 +146,7 @@ int main(void) {
 
     int startIdx = indexMap[(unsigned char)startNode];
     int *path = malloc((n + 1) * sizeof(int));
-    int best = solveTSP(startIdx, path);
+    int best = solve(startIdx, path);
 
     FILE *out = fopen("output.txt", "w");
     if (!out) out = stdout;
@@ -170,6 +161,19 @@ int main(void) {
         }
         fprintf(out, "\n");
     }
+    
+    int dk = 0;
+    printf("Nhap 1 de xem ket qua tren console: ");
+    scanf("%d", &dk);
+    if(dk == 1) {
+    printf("Hanh trinh toi uu (%d mat):\n", best);
+    for (int i = 0; i <= n; i++) {
+        printf("%c", vertexChars[path[i]]);
+        if (i < n) printf(" -> ");
+    }
+    printf("\n");
+    }
+    scanf("%d", &dk);
 
     if (out != stdout) fclose(out);
     for (int i = 0; i < n; i++) free(weight[i]);
