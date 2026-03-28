@@ -109,6 +109,7 @@ int solve(int startIndex, int *outPath) {
         free(parent[m]);
     }
     free(dp);
+    
     free(parent);
     return best;
 }
