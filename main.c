@@ -10,7 +10,7 @@ int indexMap[__N];          // ánh xạ ký tự -> chỉ số
 char vertexChars[__N];      // danh sách ký tự theo chỉ số
 int vertexCount = 0;
 
-void getIndex(unsigned char uc) {
+void getIndex(char uc) {
     if (indexMap[uc] == -1) {
         indexMap[uc] = vertexCount;
         vertexChars[vertexCount] = uc;
@@ -59,7 +59,7 @@ void writeResult(const char *filename, int *path, int length, int best, char sta
     wait();
 }
 
-void readInput(const char *filename, unsigned char *startNode) {
+void readInput(const char *filename, char *startNode) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         fprintf(stderr, "Không thể mở file dữ liệu\n");
@@ -72,7 +72,7 @@ void readInput(const char *filename, unsigned char *startNode) {
     memset(weight, -1, sizeof(weight));
     memset(indexMap, -1, sizeof(indexMap));
 
-    unsigned char u, v;
+    char u, v;
     int w;
 
     while (fscanf(file, " %c %c %d", &u, &v, &w) == 3) {
@@ -173,11 +173,27 @@ int solve_QDH_BMask(int startIndex, int *outPath) {
 
 //END TT
 
+void kTraMTranCoDinhTreoHoacCoLapHayKhong() {
+    for (int i = 0; i < vertexCount; i++) {
+        int deg = 0;
+        for (int j = 0; j < vertexCount; j++) {
+            if (weight[i][j] != -1) {
+                deg++;
+            }
+        }
+
+        if (deg<2){printf("Đồ thị có đỉnh treo hoặc đỉnh cô lập\n"); exit(1);}
+
+        }
+    return ;
+
+}
 
 int main(void) {
     //input
-    unsigned char startNode;
-    readInput("data.txt", (unsigned char*)&startNode);
+    char startNode;
+    readInput("data.txt", (char*)&startNode);
+    kTraMTranCoDinhTreoHoacCoLapHayKhong();
 
     //solve
     int *path = malloc(__N * sizeof(int));
