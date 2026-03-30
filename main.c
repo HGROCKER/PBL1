@@ -7,27 +7,22 @@
 
 int weight[__N][__N];       // ma trận trọng số
 int indexMap[__N];          // ánh xạ ký tự -> chỉ số
-char vertexChars[__N];      // danh sách ký tự theo chỉ số
-int vertexCount = 0;
+char nameIndex[__N];      // danh sách ký tự theo chỉ số
+int numCount = 0;
 
 void getIndex(char uc) {
     if (indexMap[uc] == -1) {
-        indexMap[uc] = vertexCount;
-        vertexChars[vertexCount] = uc;
-        vertexCount++;
+        indexMap[uc] = numCount;
+        nameIndex[numCount] = uc;
+        numCount++;
     }
     return ;
-}
-
-void wait() {
-    printf("\nPress any key to continue...\n");
-    getchar();
 }
 
 void showResultConsole(int *path, int length, int best) {
     printf("Hanh trinh toi uu (%d mat):\n", best);
     for (int i = 0; i <= length; i++) {
-        printf("%c", vertexChars[path[i]]);
+        printf("%c", nameIndex[path[i]]);
         if (i < length) printf(" -> ");
     }
     printf("\n");
@@ -38,25 +33,18 @@ void writeResult(const char *filename, int *path, int length, int best, char sta
     if (!out) out = stdout;
 
     if (best == INT_MIN) {
-        fprintf(out, "Không tồn tại chu trình Hamilton từ %c\n", startNode);
+        fprintf(out, "\n Không tồn tại chu trình Hamilton từ %c (QHD+BMask)\n", startNode);
     } else {
-        fprintf(out, "Hành trình tối ưu (%d mật):\n", best);
-        for (int i = 0; i <= vertexCount; i++) {
-            fprintf(out, "%c", vertexChars[path[i]]);
-            if (i < vertexCount) fprintf(out, " -> ");
+        fprintf(out, "\nHành trình tối ưu (%d mật):  (QHD+BMask)\n", best);
+        for (int i = 0; i <= numCount; i++) {
+            fprintf(out, "%c", nameIndex[path[i]]);
+            if (i < numCount) fprintf(out, " -> ");
         }
         fprintf(out, "\n");
     }
 
     if (out != stdout) fclose(out);
-    
-    int dk = 0;
-    printf("Nhap 1 de xem ket qua tren console: ");
-    scanf("%d", &dk);
-    if(dk == 1) {
-        showResultConsole(path, vertexCount, best);
-    }
-    wait();
+    showResultConsole(path, numCount, best);
 }
 
 void readInput(const char *filename, char *startNode) {
@@ -86,7 +74,7 @@ void readInput(const char *filename, char *startNode) {
 }
 
 int solve_QDH_BMask(int startIndex, int *outPath) {
-    int n = vertexCount;
+    int n = numCount;
     int fullMask = (1 << n) - 1;
     int **dp = malloc((1 << n) * sizeof(int *));
     int **parent = malloc((1 << n) * sizeof(int *));
@@ -187,12 +175,19 @@ int get_index(char ch){
 }
 
 void out_bt(FILE *g){
-    fprintf(g, "Hanh trinh toi uu (%d mat):\n", best1);
+    fprintf(g, "\nHanh trinh toi uu (%d mat): (Quay lui)\n", best1);
     for(int i = 0; i < count_best; i++){
         for(int j = 1; j <= n1; j++){
             fprintf(g, "%c -> ", name[best_path[i][j]]);
         }
         fprintf(g, "%c\n", name[best_path[i][1]]);
+    }
+    printf("\nHanh trinh toi uu (%d mat): (Quay lui)\n", best1);
+    for(int i = 0; i < count_best; i++){
+        for(int j = 1; j <= n1; j++){
+            printf("%c -> ", name[best_path[i][j]]);
+        }
+        printf("%c\n", name[best_path[i][1]]);
     }
 }
 
@@ -230,7 +225,7 @@ void Try(int i, int sum){
 
 void solve_backtracking(){
     FILE *f = fopen("data.txt", "r");
-    FILE *g = fopen("output2.txt", "w+");
+    FILE *g = fopen("output.txt", "a");
 
     n1 = 0; best1 = 0; count_best = 0;
 
@@ -265,20 +260,31 @@ void solve_backtracking(){
 //END TT
 
 void kTraMTran() {
-    for (int i = 0; i < vertexCount; i++) {
+    for (int i = 0; i < numCount; i++) {
         int deg = 0;
-        for (int j = 0; j < vertexCount; j++) {
+        for (int j = 0; j < numCount; j++) {
             if (weight[i][j] != -1) {
                 deg++;
             }
         }
 
-        if (deg<2){printf("Do thi co dinh treo hoac dinh co lap -> Khong co loi giai\n"); exit(1);}
+        if (deg<2){printf("Khong co loi giai do khong tao thanh chu trinh duong di\n"); exit(1);}
 
         }
     return ;
 
 }
+
+void printMatrix(int weight[__N][__N], int numCount) {
+    printf("Ma tran trong so:\n");
+    for (int i = 0; i < numCount; i++) {
+        for (int j = 0; j < numCount; j++) {
+            printf("%4d ", weight[i][j]);
+        }
+        printf("\n");
+    }
+}
+
 
 int main(void) {
     //input
@@ -286,17 +292,20 @@ int main(void) {
     readInput("data.txt", (char*)&startNode);
     kTraMTran();
 
+    //solve backtracking
+    solve_backtracking();
+
     //solve
     int *path = malloc(__N * sizeof(int));
     int best = solve_QDH_BMask(indexMap[startNode], path);
 
     //output
-    writeResult("output.txt", path, vertexCount, best, startNode);
+    writeResult("output.txt", path, numCount, best, startNode);
 
     //free memory
     free(path);
 
-    solve_backtracking();
+
 
     return 0;
 }
