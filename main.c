@@ -76,12 +76,12 @@ void readInput(const char *filename, char *startNode) {
 int solve_QDH_BMask(int startIndex, int *outPath) {
     int n = numCount;
     int fullMask = (1 << n) - 1;
-    int **dp = malloc((1 << n) * sizeof(int *));
-    int **parent = malloc((1 << n) * sizeof(int *));
+    int **dp = (int **)malloc((1 << n) * sizeof(int *));
+    int **parent = (int **)malloc((1 << n) * sizeof(int *));
     int mask;
     for (mask = 0; mask < (1 << n); mask++) {
-        dp[mask] = malloc(n * sizeof(int));
-        parent[mask] = malloc(n * sizeof(int));
+        dp[mask] = (int *)malloc(n * sizeof(int));
+        parent[mask] = (int *)malloc(n * sizeof(int));
         memset(dp[mask], INT_MIN, n * sizeof(int));
         memset(parent[mask], -1, n * sizeof(int));
     }
@@ -90,18 +90,18 @@ int solve_QDH_BMask(int startIndex, int *outPath) {
 
     for (mask = 1 << startIndex ; mask < (1 << n); mask++) {
 
-        if (!(mask & (1 << startIndex))) {mask|= (1<<startIndex - 1); continue;} 
+        if (!(mask & (1 << startIndex))) {mask|= (1<<startIndex - 1); continue;}
 
-        for (int i = 0; i < n; i++) { 
-            if (!(mask & (1 << i))) continue; 
-            if (dp[mask][i] == INT_MIN) continue;  
+        for (int i = 0; i < n; i++) {
+            if (!(mask & (1 << i))) continue;
+            if (dp[mask][i] == INT_MIN) continue;
             for (int j = 0; j < n; j++) {
                 if (mask & (1 << j) || weight[i][j] < 0) continue;
                 int valNew = dp[mask][i] + weight[i][j];
                 int maskNew = mask | (1 << j);
-                if (valNew > dp[maskNew][j]) { 
+                if (valNew > dp[maskNew][j]) {
                     dp[maskNew][j] = valNew;
-                    parent[maskNew][j] = i; 
+                    parent[maskNew][j] = i;
                 }
             }
 
@@ -111,7 +111,7 @@ int solve_QDH_BMask(int startIndex, int *outPath) {
 
     int best = INT_MIN;
     int last = -1;
-     
+
     for (int i = 0; i < n; i++) {
         if (dp[fullMask][i] == INT_MIN || weight[i][startIndex] < 0 ) continue;
         int val = dp[fullMask][i] + weight[i][startIndex];
@@ -136,10 +136,10 @@ int solve_QDH_BMask(int startIndex, int *outPath) {
     outPath[idx] = startIndex;
     idx--;
     int x = last;
-    
+
     while (x != startIndex) {
         outPath[idx--] = x;
-        int p = parent[mask][x]; 
+        int p = parent[mask][x];
         mask ^= (1 << x); // tắt đỉnh hiện tại (x) tạo trường hợp tiền đề trước đs
         x = p; //gán đỉnh đi đến đây trong truong hop hiẹn tại
     }
@@ -150,7 +150,7 @@ int solve_QDH_BMask(int startIndex, int *outPath) {
         free(parent[m]);
     }
     free(dp);
-    
+
     free(parent);
     return best;
 }
@@ -296,7 +296,7 @@ int main(void) {
     solve_backtracking();
 
     //solve
-    int *path = malloc(__N * sizeof(int));
+    int *path = (int*)malloc(__N * sizeof(int));
     int best = solve_QDH_BMask(indexMap[startNode], path);
 
     //output
