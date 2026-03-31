@@ -19,110 +19,119 @@ void getIndex(char uc) {
     return ;
 }
 
-void showResultConsole(int *path, int length, int best) {
-    printf("Hanh trinh toi uu (%d mat):\n", best);
-    for (int i = 0; i <= length; i++) {
-        printf("%c", nameIndex[path[i]]);
-        if (i < length) printf(" -> ");
-    }
-    printf("\n");
-}
+struct Result {
+    char name;
+    struct Result* next;
+};
 
-void writeResult(const char *filename, int *path, int length, int best, char startNode) {
+void writeResult(const char *filename, struct Result *path, int best, char startNode) {
     FILE *out = fopen(filename, "w");
     if (!out) out = stdout;
-
-    if (best == INT_MIN) {
-        fprintf(out, "\n Không tồn tại chu trình Hamilton từ %c (QHD+BMask)\n", startNode);
+    if (best < 0) {
+        fprintf(out, "Không có chu trình Hamilton nào bắt đầu tại %c\n", startNode);
+        printf("Không có chu trình Hamilton nào bắt đầu tại %c\n", startNode);
     } else {
-        fprintf(out, "\nHành trình tối ưu (%d mật):  (QHD+BMask)\n", best);
-        for (int i = 0; i <= numCount; i++) {
-            fprintf(out, "%c", nameIndex[path[i]]);
-            if (i < numCount) fprintf(out, " -> ");
-        }
-        fprintf(out, "\n");
+        fprintf(out, "Hành trình tối ưu (%d điểm): ", best);
+        printf("Hành trình tối ưu (%d điểm): ", best);
+        struct Result *current = path;
+        do {
+            fprintf(out, "%c -> ", current->name);
+            printf("%c -> ", current->name);
+            current = current->next;
+        } while (current != path);
+        fprintf(out, "%c\n", path->name);
+        printf("%c\n", path->name);
     }
-
-    if (out != stdout) fclose(out);
-    showResultConsole(path, numCount, best);
 }
 
 void readInput(const char *filename, char *startNode) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         fprintf(stderr, "Không thể mở file dữ liệu\n");
-        fclose(file);
         exit(1);
     }
 
-    fscanf(file, " %c", startNode);
-    getIndex(*startNode);
     memset(weight, -1, sizeof(weight));
     memset(indexMap, -1, sizeof(indexMap));
+    numCount = 0;
+
+    fscanf(file, " %c", startNode);
+    getIndex(*startNode);
 
     char u, v;
     int w;
-
     while (fscanf(file, " %c %c %d", &u, &v, &w) == 3) {
         getIndex(u);
         getIndex(v);
         int iu = indexMap[u];
         int iv = indexMap[v];
-        weight[iu][iv] = weight[iv][iu] = weight[iu][iv]>w?weight[iu][iv]:w;
+        weight[iu][iv] = weight[iv][iu] = weight[iu][iv] > w ? weight[iu][iv] : w;
     }
     fclose(file);
 }
 
-int solve_QDH_BMask(int startIndex, int *outPath) {
+int solve_QDH_BMask(struct Result *outPath) {
     int n = numCount;
-    int fullMask = (1 << n) - 1;
-    int **dp = (int **)malloc((1 << n) * sizeof(int *));
-    int **parent = (int **)malloc((1 << n) * sizeof(int *));
-    int mask;
-    for (mask = 0; mask < (1 << n); mask++) {
-        dp[mask] = (int *)malloc(n * sizeof(int));
-        parent[mask] = (int *)malloc(n * sizeof(int));
-        memset(dp[mask], INT_MIN, n * sizeof(int));
-        memset(parent[mask], -1, n * sizeof(int));
+    if (n < 3) return -1;
+
+    int fullMask = 1 << (n - 1);
+    int **dp = (int **)malloc(fullMask * sizeof(int *));
+    int **parent = (int **)malloc(fullMask * sizeof(int *));
+    if (!dp || !parent) {
+        printf("Không đủ bộ nhớ để giải quyết bài toán\n");
+        exit(1);
     }
 
-    dp[1 << startIndex][startIndex] = 0;
+    for (int mask = 0; mask < fullMask; mask++) {
+        dp[mask] = (int *)malloc(n * sizeof(int));
+        parent[mask] = (int *)malloc(n * sizeof(int));
+        if (!dp[mask] || !parent[mask]) {
+            printf("Không đủ bộ nhớ để giải quyết bài toán\n");
+            exit(1);
+        }
+        for (int j = 0; j < n; j++) {
+            dp[mask][j] = INT_MIN;
+            parent[mask][j] = -1;
+        }
+    }
 
-    for (mask = 1 << startIndex ; mask < (1 << n); mask++) {
+    for (int j = 1; j < n; j++) {
+        if (weight[0][j] >= 0) {
+            int mask = 1 << (j - 1);
+            dp[mask][j] = weight[0][j];
+            parent[mask][j] = 0;
+        }
+    }
 
-        if (!(mask & (1 << startIndex))) {mask|= (1<<startIndex - 1); continue;}
-
-        for (int i = 0; i < n; i++) {
-            if (!(mask & (1 << i))) continue;
-            if (dp[mask][i] == INT_MIN) continue;
-            for (int j = 0; j < n; j++) {
-                if (mask & (1 << j) || weight[i][j] < 0) continue;
-                int valNew = dp[mask][i] + weight[i][j];
-                int maskNew = mask | (1 << j);
-                if (valNew > dp[maskNew][j]) {
-                    dp[maskNew][j] = valNew;
-                    parent[maskNew][j] = i;
+    for (int mask = 0; mask < fullMask; mask++) {
+        for (int j = 1; j < n; j++) {
+            if (!(mask & (1 << (j - 1))) || dp[mask][j] == INT_MIN) continue;
+            for (int k = 1; k < n; k++) {
+                if (mask & (1 << (k - 1)) || weight[j][k] < 0) continue;
+                int nextMask = mask | (1 << (k - 1));
+                int cand = dp[mask][j] + weight[j][k];
+                if (cand > dp[nextMask][k]) {
+                    dp[nextMask][k] = cand;
+                    parent[nextMask][k] = j;
                 }
             }
-
         }
-
     }
 
     int best = INT_MIN;
     int last = -1;
-
-    for (int i = 0; i < n; i++) {
-        if (dp[fullMask][i] == INT_MIN || weight[i][startIndex] < 0 ) continue;
-        int val = dp[fullMask][i] + weight[i][startIndex];
-        if (val > best) {
-            best = val;
-            last = i;
+    fullMask--;
+    for (int j = 1; j < n; j++) {
+        if (dp[fullMask][j] == INT_MIN || weight[j][0] < 0) continue;
+        int total = dp[fullMask][j] + weight[j][0];
+        if (total > best) {
+            best = total;
+            last = j;
         }
     }
 
     if (last == -1) {
-        for (int mask = 0; mask < (1 << n); mask++) {
+        for (int mask = 0; mask <= fullMask; mask++) {
             free(dp[mask]);
             free(parent[mask]);
         }
@@ -131,27 +140,27 @@ int solve_QDH_BMask(int startIndex, int *outPath) {
         return INT_MIN;
     }
 
-    mask = fullMask;
+    int mask = fullMask;
     int idx = n;
-    outPath[idx] = startIndex;
-    idx--;
-    int x = last;
-
-    while (x != startIndex) {
-        outPath[idx--] = x;
-        int p = parent[mask][x];
-        mask ^= (1 << x); // tắt đỉnh hiện tại (x) tạo trường hợp tiền đề trước đs
-        x = p; //gán đỉnh đi đến đây trong truong hop hiẹn tại
+    outPath->name = nameIndex[0];
+    struct Result *current = outPath;
+    int cur = last;
+    while (cur != 0) {
+        current->next = (struct Result *)malloc(sizeof(struct Result));
+        current = current->next;
+        current->name = nameIndex[cur];
+        int temp = parent[mask][cur];
+        mask ^= (1 << (cur - 1));
+        cur = temp;
     }
-    outPath[idx] = startIndex; // điểm bắt đầu là startIndex (kết thúc cũng là nó, thường thì thúc này đang gán cho outPath[0])
-
-    for (int m = 0; m < (1 << n); m++) {//giai phong bo nho
+    current->next = outPath; // tạo chu trình
+    for (int m = 0; m <= fullMask; m++) {
         free(dp[m]);
         free(parent[m]);
     }
     free(dp);
-
     free(parent);
+
     return best;
 }
 //END TT
@@ -301,11 +310,11 @@ int main(void) {
         printf("Số lượng đỉnh quá lớn, không thể giải bằng QHD+BMask\n");
         return 0;
     }
-    int *path = (int*)malloc(__N * sizeof(int));
-    int best = solve_QDH_BMask(indexMap[startNode], path);
+    struct Result *path = (struct Result*)malloc(sizeof(struct Result));
+    int best = solve_QDH_BMask(path);
 
     //output
-    writeResult("output.txt", path, numCount, best, startNode);
+    writeResult("output.txt", path, best, startNode);
 
     //free memory
     free(path);
