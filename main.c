@@ -28,11 +28,11 @@ void writeResult(const char *filename, struct Result *path, int best, char start
     FILE *out = fopen(filename, "w");
     if (!out) out = stdout;
     if (best < 0) {
-        fprintf(out, "Không có chu trình Hamilton nào bắt đầu tại %c\n", startNode);
-        printf("Không có chu trình Hamilton nào bắt đầu tại %c\n", startNode);
+        fprintf(out, "\nKhong co chu trinh Hamilton bat dau tai %c\n", startNode);
+        printf("\nKhong co chu trinh Hamilton bat dau tai %c\n", startNode);
     } else {
-        fprintf(out, "Hành trình tối ưu (%d điểm): ", best);
-        printf("Hành trình tối ưu (%d điểm): ", best);
+        fprintf(out, "\nHanh trinh toi uu (%d mat): (QHD + BMask)\n", best);
+        printf("\nHanh trinh toi uu (%d diem): (QHD + BMask)\n ", best);
         struct Result *current = path;
         do {
             fprintf(out, "%c -> ", current->name);
@@ -47,7 +47,7 @@ void writeResult(const char *filename, struct Result *path, int best, char start
 void readInput(const char *filename, char *startNode) {
     FILE *file = fopen(filename, "r");
     if (!file) {
-        fprintf(stderr, "Không thể mở file dữ liệu\n");
+        fprintf(stderr, "Khong thu mo file data.txt\n");
         exit(1);
     }
 
@@ -78,7 +78,7 @@ int solve_QDH_BMask(struct Result *outPath) {
     int **dp = (int **)malloc(fullMask * sizeof(int *));
     int **parent = (int **)malloc(fullMask * sizeof(int *));
     if (!dp || !parent) {
-        printf("Không đủ bộ nhớ để giải quyết bài toán\n");
+        printf("Khong du bo nho de xu li\n");
         exit(1);
     }
 
@@ -86,7 +86,7 @@ int solve_QDH_BMask(struct Result *outPath) {
         dp[mask] = (int *)malloc(n * sizeof(int));
         parent[mask] = (int *)malloc(n * sizeof(int));
         if (!dp[mask] || !parent[mask]) {
-            printf("Không đủ bộ nhớ để giải quyết bài toán\n");
+            printf("Khong du bo nho de xu li\n");
             exit(1);
         }
         for (int j = 0; j < n; j++) {
