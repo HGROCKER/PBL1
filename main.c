@@ -25,7 +25,7 @@ struct Result {
 };
 
 void writeResult(const char *filename, struct Result *path, int best, char startNode) {
-    FILE *out = fopen(filename, "w");
+    FILE *out = fopen(filename, "a");
     if (!out) out = stdout;
     if (best < 0) {
         fprintf(out, "\nKhong co chu trinh Hamilton bat dau tai %c\n", startNode);
@@ -234,7 +234,7 @@ void Try(int i, int sum){
 
 void solve_backtracking(){
     FILE *f = fopen("data.txt", "r");
-    FILE *g = fopen("output.txt", "a");
+    FILE *g = fopen("output.txt", "w");
 
     n1 = 0; best1 = 0; count_best = 0;
 
@@ -319,6 +319,7 @@ int main(void) {
     //free memory
     free(path);
 
+    getchar();
 
 
     return 0;
