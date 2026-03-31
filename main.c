@@ -290,12 +290,17 @@ int main(void) {
     //input
     char startNode;
     readInput("data.txt", (char*)&startNode);
+    printMatrix(weight, numCount);
     kTraMTran();
 
     //solve backtracking
     solve_backtracking();
 
     //solve
+    if(numCount > 20) {
+        printf("Số lượng đỉnh quá lớn, không thể giải bằng QHD+BMask\n");
+        return 0;
+    }
     int *path = (int*)malloc(__N * sizeof(int));
     int best = solve_QDH_BMask(indexMap[startNode], path);
 
