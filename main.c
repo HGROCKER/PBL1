@@ -16,7 +16,6 @@ struct ResultWay {
 
 struct Result {
     struct ResultWay* path;
-    char startNode;
     int best;
 };
 
@@ -55,27 +54,32 @@ void readInput(const char *filename, char *startNode) {
     fclose(file);
 }
 
-void writeResult(const char *filename, struct Result* result) {
+void writeResult(const char *filename, struct Result* result, char startNode) {
     FILE *out = fopen(filename, "w");
     if (!out) out = stdout;
     if (result->best < 0) {
-        fprintf(out, "\nKhong co chu trinh Hamilton bat dau tai %c\n", result->startNode);
-        printf("\nKhong co chu trinh Hamilton bat dau tai %c\n", result->startNode);
+        fprintf(out, "\nKhong co chu trinh Hamilton bat dau tai %c\n", startNode);
+        printf("\nKhong co chu trinh Hamilton bat dau tai %c\n", startNode);
     } else {
         fprintf(out, "\nHanh trinh toi uu (%d mat): (QHD + BMask)\n", result->best);
         printf("\nHanh trinh toi uu (%d diem): (QHD + BMask)\n ", result->best);
         struct ResultWay* current = result->path;
+        while(current->name != startNode) {
+            fprintf(out, "%c -> ", current->name);
+            printf("%c -> ", current->name);
+            current = current->next;
+        }
         do {
             fprintf(out, "%c -> ", current->name);
             printf("%c -> ", current->name);
             current = current->next;
-        } while (current != result->path);
+        } while (current->name != startNode);
         fprintf(out, "%c\n", result->path->name);
         printf("%c\n", result->path->name);
     }
 }
 
-void solve_QDH_BMask(struct Result *result) {
+void solve_QDH_BMask(struct Result *result, char startNode) {
     int n = numCount;
     if (n < 3) {printf("Khong the tao chu trinh\n"); return ;}
 
@@ -166,7 +170,7 @@ void solve_QDH_BMask(struct Result *result) {
     free(dp);
     free(parent);
 
-    writeResult("output.txt", result);
+    writeResult("output.txt", result, startNode);
     return ;
 }
 //END TT
@@ -312,7 +316,7 @@ int main(void) {
     struct Result *result= (struct Result*)malloc(sizeof(struct Result));
     struct ResultWay *path = (struct ResultWay*)malloc(sizeof(struct ResultWay));
     result->path = path;
-    solve_QDH_BMask(result);
+    solve_QDH_BMask(result, startNode);
 
     //free memory
     free(result);
