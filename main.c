@@ -2,13 +2,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#define __N 256
-#define MAX 100
+#define _N_ 256
 
-int weight[__N][__N];       // ma trận trọng số
-int indexMap[__N];          // ánh xạ ký tự -> chỉ số
-char nameIndex[__N];      // danh sách ký tự theo chỉ số
+int weight[_N_][_N_];       // ma trận trọng số
+int indexMap[_N_];          // ánh xạ ký tự -> chỉ số 'v' -> index v = 0 ; v[0]=
+char nameIndex[_N_];      // danh sách ký tự theo chỉ số
 int numCount = 0;
+
+struct ResultWay {
+    char name;
+    struct ResultWay* next;
+};
+
+struct Result {
+    struct ResultWay* path;
+    char startNode;
+    int best;
+};
 
 void getIndex(char uc) {
     if (indexMap[uc] == -1) {
@@ -19,31 +29,6 @@ void getIndex(char uc) {
     return ;
 }
 
-struct Result {
-    char name;
-    struct Result* next;
-};
-
-void writeResult(const char *filename, struct Result *path, int best, char startNode) {
-    FILE *out = fopen(filename, "a");
-    if (!out) out = stdout;
-    if (best < 0) {
-        fprintf(out, "\nKhong co chu trinh Hamilton bat dau tai %c\n", startNode);
-        printf("\nKhong co chu trinh Hamilton bat dau tai %c\n", startNode);
-    } else {
-        fprintf(out, "\nHanh trinh toi uu (%d mat): (QHD + BMask)\n", best);
-        printf("\nHanh trinh toi uu (%d diem): (QHD + BMask)\n ", best);
-        struct Result *current = path;
-        do {
-            fprintf(out, "%c -> ", current->name);
-            printf("%c -> ", current->name);
-            current = current->next;
-        } while (current != path);
-        fprintf(out, "%c\n", path->name);
-        printf("%c\n", path->name);
-    }
-}
-
 void readInput(const char *filename, char *startNode) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -51,7 +36,7 @@ void readInput(const char *filename, char *startNode) {
         exit(1);
     }
 
-    memset(weight, -1, sizeof(weight));
+    memset(weight, 0, sizeof(weight));
     memset(indexMap, -1, sizeof(indexMap));
     numCount = 0;
 
@@ -70,9 +55,29 @@ void readInput(const char *filename, char *startNode) {
     fclose(file);
 }
 
-int solve_QDH_BMask(struct Result *outPath) {
+void writeResult(const char *filename, struct Result* result) {
+    FILE *out = fopen(filename, "w");
+    if (!out) out = stdout;
+    if (result->best < 0) {
+        fprintf(out, "\nKhong co chu trinh Hamilton bat dau tai %c\n", result->startNode);
+        printf("\nKhong co chu trinh Hamilton bat dau tai %c\n", result->startNode);
+    } else {
+        fprintf(out, "\nHanh trinh toi uu (%d mat): (QHD + BMask)\n", result->best);
+        printf("\nHanh trinh toi uu (%d diem): (QHD + BMask)\n ", result->best);
+        struct ResultWay* current = result->path;
+        do {
+            fprintf(out, "%c -> ", current->name);
+            printf("%c -> ", current->name);
+            current = current->next;
+        } while (current != result->path);
+        fprintf(out, "%c\n", result->path->name);
+        printf("%c\n", result->path->name);
+    }
+}
+
+void solve_QDH_BMask(struct Result *result) {
     int n = numCount;
-    if (n < 3) return -1;
+    if (n < 3) {printf("Khong the tao chu trinh\n"); return ;}
 
     int fullMask = 1 << (n - 1);
     int **dp = (int **)malloc(fullMask * sizeof(int *));
@@ -96,7 +101,7 @@ int solve_QDH_BMask(struct Result *outPath) {
     }
 
     for (int j = 1; j < n; j++) {
-        if (weight[0][j] >= 0) {
+        if (weight[0][j] > 0) {
             int mask = 1 << (j - 1);
             dp[mask][j] = weight[0][j];
             parent[mask][j] = 0;
@@ -107,7 +112,7 @@ int solve_QDH_BMask(struct Result *outPath) {
         for (int j = 1; j < n; j++) {
             if (!(mask & (1 << (j - 1))) || dp[mask][j] == INT_MIN) continue;
             for (int k = 1; k < n; k++) {
-                if (mask & (1 << (k - 1)) || weight[j][k] < 0) continue;
+                if (mask & (1 << (k - 1)) || weight[j][k] == 0) continue;
                 int nextMask = mask | (1 << (k - 1));
                 int cand = dp[mask][j] + weight[j][k];
                 if (cand > dp[nextMask][k]) {
@@ -118,14 +123,14 @@ int solve_QDH_BMask(struct Result *outPath) {
         }
     }
 
-    int best = INT_MIN;
+    result->best = INT_MIN;
     int last = -1;
     fullMask--;
     for (int j = 1; j < n; j++) {
-        if (dp[fullMask][j] == INT_MIN || weight[j][0] < 0) continue;
+        if (dp[fullMask][j] == INT_MIN || weight[j][0] == 0) continue;
         int total = dp[fullMask][j] + weight[j][0];
-        if (total > best) {
-            best = total;
+        if (total > result->best) {
+            result->best = total;
             last = j;
         }
     }
@@ -137,23 +142,23 @@ int solve_QDH_BMask(struct Result *outPath) {
         }
         free(dp);
         free(parent);
-        return INT_MIN;
+        return ;
     }
 
     int mask = fullMask;
     int idx = n;
-    outPath->name = nameIndex[0];
-    struct Result *current = outPath;
+    result->path->name = nameIndex[0];;
+    struct ResultWay *current = result->path;
     int cur = last;
     while (cur != 0) {
-        current->next = (struct Result *)malloc(sizeof(struct Result));
+        current->next = (struct ResultWay *)malloc(sizeof(struct ResultWay));
         current = current->next;
         current->name = nameIndex[cur];
         int temp = parent[mask][cur];
         mask ^= (1 << (cur - 1));
         cur = temp;
     }
-    current->next = outPath; // tạo chu trình
+    current->next = result->path; // tạo chu trình
     for (int m = 0; m <= fullMask; m++) {
         free(dp[m]);
         free(parent[m]);
@@ -161,68 +166,57 @@ int solve_QDH_BMask(struct Result *outPath) {
     free(dp);
     free(parent);
 
-    return best;
+    writeResult("output.txt", result);
+    return ;
 }
 //END TT
 
 
 // ================= BACKTRACKING =================
 
-
-int n1;
-int c[MAX][MAX], visited[MAX], x[MAX];
-int best1, best_path[MAX][MAX], count_best;
-char name[MAX];
-
-int get_index(char ch){
-    for(int i = 1; i <= n1; i++){
-        if(name[i] == ch) return i;
-    }
-    n1++;
-    name[n1] = ch;
-    return n1;
-}
+int visited[_N_], x[_N_];
+int best1, best_path[_N_][_N_], count_best;
 
 void out_bt(FILE *g){
     fprintf(g, "\nHanh trinh toi uu (%d mat): (Quay lui)\n", best1);
     for(int i = 0; i < count_best; i++){
-        for(int j = 1; j <= n1; j++){
-            fprintf(g, "%c -> ", name[best_path[i][j]]);
+        for(int j = 0; j < numCount; j++){
+            fprintf(g, "%c -> ", nameIndex[best_path[i][j]]);
         }
-        fprintf(g, "%c\n", name[best_path[i][1]]);
+        fprintf(g, "%c\n", nameIndex[best_path[i][1]]);
     }
     printf("\nHanh trinh toi uu (%d mat): (Quay lui)\n", best1);
     for(int i = 0; i < count_best; i++){
-        for(int j = 1; j <= n1; j++){
-            printf("%c -> ", name[best_path[i][j]]);
+        for(int j = 0; j < numCount; j++){
+            printf("%c -> ", nameIndex[best_path[i][j]]);
         }
-        printf("%c\n", name[best_path[i][1]]);
+        printf("%c\n", nameIndex[best_path[i][1]]);
     }
 }
 
 void Try(int i, int sum){
-    for(int v = 1; v <= n1; v++){
-        if(!visited[v] && c[x[i-1]][v] > 0){
+    for(int v = 0; v < numCount; v++){
+        if(!visited[v] && weight[x[i-1]][v] > 0){
             visited[v] = 1;
             x[i] = v;
 
-            int new_sum = sum + c[x[i-1]][v];
+            int new_sum = sum + weight[x[i-1]][v];
 
-            if(i == n1){
-                if(c[v][x[1]] > 0){
-                    new_sum += c[v][x[1]];
+            if(i == numCount - 1){
+                if(weight[v][x[0]] > 0){
+                    new_sum += weight[v][x[0]];
 
                     if(new_sum > best1){
                         best1 = new_sum;
                         count_best = 0;
                     }
                     if(new_sum == best1){
-                        for(int j = 1; j <= n1; j++){
+                        for(int j = 0; j < numCount; j++){
                             best_path[count_best][j] = x[j];
                         }
                         count_best++;
                     }
-                }
+                }   
             } else {
                 Try(i + 1, new_sum);
             }
@@ -234,31 +228,22 @@ void Try(int i, int sum){
 
 void solve_backtracking(){
     FILE *f = fopen("data.txt", "r");
-    FILE *g = fopen("output.txt", "w");
+    FILE *g = fopen("output.txt", "a");
 
-    n1 = 0; best1 = 0; count_best = 0;
+    best1 = 0; count_best = 0;
 
-    for(int i = 0; i < MAX; i++){
-        for(int j = 0; j < MAX; j++) c[i][j] = 0;
-        visited[i] = 0;
-    }
+    memset(visited, 0, sizeof(visited));
 
     char start, u, v;
     int w;
 
     fscanf(f, " %c", &start);
 
-    while(fscanf(f, " %c %c %d", &u, &v, &w) != EOF){
-        int i = get_index(u);
-        int j = get_index(v);
-        c[i][j] = c[j][i] = w;
-    }
-
-    int start_idx = get_index(start);
-    x[1] = start_idx;
+    int start_idx = indexMap[start];
+    x[0] = start_idx;
     visited[start_idx] = 1;
 
-    Try(2, 0);
+    Try(1, 0);
     out_bt(g);
 
     fclose(f);
@@ -284,7 +269,7 @@ void kTraMTran() {
 
 }
 
-void printMatrix(int weight[__N][__N], int numCount) {
+void printMatrix(int weight[_N_][_N_], int numCount) {
     printf("Ma tran trong so:\n");
     for (int i = 0; i < numCount; i++) {
         for (int j = 0; j < numCount; j++) {
@@ -294,6 +279,20 @@ void printMatrix(int weight[__N][__N], int numCount) {
     }
 }
 
+
+void MenuChoice() {
+    char choice[_N_];
+    printf("Chon phuong phap giai:\n");
+    scanf("%s", choice);
+        if (strcmp(choice, "QHD") == 0) {
+            // Gọi hàm giải thuật QHD + BMask
+        } else if (strcmp(choice, "Backtracking") == 0) {
+            // Gọi hàm giải thuật Backtracking
+        } else {
+            printf("Lua chon khong hop le. Vui long chon lai.\n");
+            MenuChoice();
+        }
+}
 
 int main(void) {
     //input
@@ -310,16 +309,14 @@ int main(void) {
         printf("Số lượng đỉnh quá lớn, không thể giải bằng QHD+BMask\n");
         return 0;
     }
-    struct Result *path = (struct Result*)malloc(sizeof(struct Result));
-    int best = solve_QDH_BMask(path);
-
-    //output
-    writeResult("output.txt", path, best, startNode);
+    struct Result *result= (struct Result*)malloc(sizeof(struct Result));
+    struct ResultWay *path = (struct ResultWay*)malloc(sizeof(struct ResultWay));
+    result->path = path;
+    solve_QDH_BMask(result);
 
     //free memory
-    free(path);
+    free(result);
 
-    getchar();
 
 
     return 0;
