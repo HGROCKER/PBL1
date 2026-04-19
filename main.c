@@ -32,7 +32,11 @@ void printMenu() {
     printf(CYAN "=============================================================\n\n" RESET);
 }
 
-
+void clearDataFile(char *filename){
+    FILE *out = fopen(filename, "w");
+    fclose(out);
+    return ;
+}
 
 char *nameFileOut = "output.txt", *nameFileIn = "data.txt";
 
@@ -41,17 +45,6 @@ struct ResultWay {
     struct ResultWay* next;
 };
 
-void printMatrix(int weight[__MAX_N][__MAX_N], int n) {
-    int i, j;
-    printf("Ma tran trong so:\n");
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
-            if (weight[i][j] == -1) printf(" INF ");
-            else printf("%4d ", weight[i][j]);
-        }
-        printf("\n");
-    }
-}
 
 void readInput(const char *filename, int weight[__MAX_N][__MAX_N], int indexMap[__MAX_CHAR], char nameIndex[__MAX_N], int *n, char *startNode) {
     FILE *file = fopen(filename, "r");
@@ -98,10 +91,7 @@ void writeResult(const char *filename, struct ResultWay* result, int best, char 
     if (best <= 0) {
         fprintf(out, "\nKhong co chu trinh Hamilton bat dau tai %c\n", startNode);
         printf("\nKhong co chu trinh Hamilton bat dau tai %c\n", startNode);
-    } else {
-        fprintf(out, "\nHanh trinh toi uu (%d diem): \n", best);
-        printf("\nHanh trinh toi uu (%d diem):\n ", best);
-        
+    } else {        
         if (result) {
             while(result->name!=startNode)result=result->next;      
             do {
@@ -263,15 +253,19 @@ void solve_backtracking(int n, int weight[__MAX_N][__MAX_N], int indexMap[__MAX_
     x_bt[0] = indexMap[(unsigned char)startNode];
 
     Try(1, 0);
-    
+    FILE *out = fopen( *nameFileOut,  "a");
     if(best_bt < 1) {
+        fprintf(out,"Quay lui: Khong tim thay chu trinh.\n");
         printf("Quay lui: Khong tim thay chu trinh.\n");
         return;
     }
     printf("\nQuay lui: Hanh trinh toi uu (%d diem)\n", best_bt);
+    fprintf(out,"\nQuay lui: Hanh trinh toi uu (%d diem)\n", best_bt);
+
     int i,j;
     for(i = 0; i < count_best_bt; i++) {
         for(j = 0; j < n; j++) printf("%c -> ", nameIndex[best_path_bt[i][j]]);
+        fprintf(out,"%c\n", nameIndex[best_path_bt[i][0]]);
         printf("%c\n", nameIndex[best_path_bt[i][0]]);
     }
 }
@@ -429,15 +423,14 @@ void NhanhCanh(int weight[__MAX_N][__MAX_N],int n, char nameIndex[__MAX_N], char
 //END TT
 
 int main(void) {
-    
-
     int weight[__MAX_N][__MAX_N], indexMap[__MAX_CHAR], n;
     char nameIndex[__MAX_N], startNode;
     struct ResultWay *result = (struct ResultWay*)malloc(sizeof(struct ResultWay));
     result->next = NULL;
     int best;
+
+    clearDataFile(nameFileOut);
     readInput(nameFileIn, weight, indexMap, nameIndex, &n, &startNode);
-    printMatrix(weight, n);
     kTraMTran(weight, n);
     printMenu();
 
