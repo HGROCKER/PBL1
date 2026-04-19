@@ -8,6 +8,32 @@
 #define __MAX_Way 1000
 #define INF 1e9
 
+void printMenu() {
+    #define RESET   "\033[0m"
+    #define RED     "\033[31m"
+    #define GREEN   "\033[32m"
+    #define YELLOW  "\033[33m"
+    #define BLUE    "\033[34m"
+    #define CYAN    "\033[36m"
+
+    printf(CYAN "=============================================================\n" RESET);
+
+    printf(GREEN "| %-61s|\n" RESET, "TRUONG DAI HOC BACH KHOA - DAI HOC DA NANG");
+    printf(GREEN "| %-61s|\n" RESET, "KHOA: CONG NGHE THONG TIN");
+
+    printf(YELLOW "| %-61s|\n" RESET, "PBL1: DO AN LAP TRINH TINH TOAN");
+    printf(YELLOW "| %-61s|\n" RESET, "DE TAI: BAI TOAN ONG TIM MAT");
+
+    printf(BLUE "| %-61s|\n" RESET, "GIAO VIEN HUONG DAN: TS. NGUYEN VAN HIEU");
+
+    printf(RED "| %-61s|\n" RESET, "SINH VIEN: TRAN VAN KHANH HUNG - 25T_KHDL");
+    printf(RED "| %-61s|\n" RESET, "           PHAM PHU HUNG - 25T_KHDL");
+
+    printf(CYAN "=============================================================\n\n" RESET);
+}
+
+
+
 char *nameFileOut = "output.txt", *nameFileIn = "data.txt";
 
 struct ResultWay {
@@ -106,16 +132,22 @@ void kTraMTran(int weight[__MAX_N][__MAX_N], int n) {
 }
 
 void solve_QDH_BMask(int weight[__MAX_N][__MAX_N], int n, char nameIndex[__MAX_N], char startNode, int *best, struct ResultWay *result) {
-    if (n < 3) { printf("So dinh qua it\n"); return; }
-    if (n > 25) { printf("N qua lon cho QHD\n"); return; }
-
+    if (n < 3) {printf("Khong the tao chu trinh\n"); return ;}
     int fullMask = 1 << (n - 1), mask, j, k;
     int **dp = (int **)malloc(fullMask * sizeof(int *));
     int **parent = (int **)malloc(fullMask * sizeof(int *));
+    if (!dp || !parent) {
+        printf("Khong du bo nho de xu li\n");
+        exit(1);
+    }
 
     for (mask = 0; mask < fullMask; mask++) {
         dp[mask] = (int *)malloc(n * sizeof(int));
         parent[mask] = (int *)malloc(n * sizeof(int));
+        if (!dp[mask] || !parent[mask]) {
+            printf("Khong du bo nho de xu li\n");
+            exit(1);
+        }
         for (j = 0; j < n; j++) {
             dp[mask][j] = INT_MIN;
             parent[mask][j] = -1;
@@ -124,70 +156,72 @@ void solve_QDH_BMask(int weight[__MAX_N][__MAX_N], int n, char nameIndex[__MAX_N
 
     for (j = 1; j < n; j++) {
         if (weight[0][j] > 0) {
-            dp[1 << (j - 1)][j] = weight[0][j];
-            parent[1 << (j - 1)][j] = 0;
+            mask = 1 << (j - 1);
+            dp[mask][j] = weight[0][j];
+            parent[mask][j] = 0;
         }
     }
 
-    int nextMask,cand;
-    for (mask = 1; mask < fullMask; mask++) {
+    for (mask = 0; mask < fullMask; mask++) {
+        int nextMask, cand;
         for (j = 1; j < n; j++) {
             if (!(mask & (1 << (j - 1))) || dp[mask][j] == INT_MIN) continue;
             for (k = 1; k < n; k++) {
-                if (!(mask & (1 << (k - 1))) && weight[j][k] > 0) {
-                    nextMask = mask | (1 << (k - 1));
-                    cand = dp[mask][j] + weight[j][k];
-                    if (cand > dp[nextMask][k]) {
-                        dp[nextMask][k] = cand;
-                        parent[nextMask][k] = j;
-                    }
+                if (mask & (1 << (k - 1)) || weight[j][k] <= 0) continue;
+                nextMask = mask | (1 << (k - 1));
+                cand = dp[mask][j] + weight[j][k];
+                if (cand > dp[nextMask][k]) {
+                    dp[nextMask][k] = cand;
+                    parent[nextMask][k] = j;
                 }
             }
         }
     }
-
     *best = -1;
-    int last = -1;
-    int finalMask = fullMask - 1;
-    int total;
+    int last = -1, total;
+    fullMask--;
     for (j = 1; j < n; j++) {
-        if (dp[finalMask][j] != INT_MIN && weight[j][0] > 0) {
-            total = dp[finalMask][j] + weight[j][0];
-            if (total > *best) {
-                *best = total;
-                last = j;
-            }
+        if (dp[fullMask][j] == INT_MIN || weight[j][0] <= 0) continue;
+        total = dp[fullMask][j] + weight[j][0];
+        if (total > *best) {
+            *best = total;
+            last = j;
         }
     }
-
-    if (last != -1) {
-        result->name = nameIndex[0];
-        struct ResultWay *header = result;
-        int cur = last;
-        int curMask = finalMask;
-        while (cur != 0) {
-            struct ResultWay *newNode = (struct ResultWay *)malloc(sizeof(struct ResultWay));
-            newNode->name = nameIndex[cur];
-            newNode->next = NULL;
-            struct ResultWay *temp = result->next;
-            result->next = newNode;
-            newNode->next = temp;
-
-            int prev = parent[curMask][cur];
-            curMask ^= (1 << (cur - 1));
-            cur = prev;
-        }
-        result->next = header;
-        printf("\nQHD+BMask");
+    if (last == -1) {
         writeResult(nameFileOut, result, *best, startNode);
+        for (mask = 0; mask <= fullMask; mask++) {
+            free(dp[mask]);
+            free(parent[mask]);
+        }
+        free(dp);
+        free(parent);
+        return ;
     }
 
-    for (mask = 0; mask < fullMask; mask++) {
+    mask = fullMask;
+    result->name = nameIndex[0];;
+    struct ResultWay *current = result;
+    int cur = last, temp;
+    while (cur != 0) {
+        current->next = (struct ResultWay *)malloc(sizeof(struct ResultWay));
+        current = current->next;
+        current->name = nameIndex[cur];
+        temp = parent[mask][cur];
+        mask ^= (1 << (cur - 1));
+        cur = temp;
+    }
+    current->next = result;
+    
+    for (mask = 0; mask <= fullMask; mask++) {
         free(dp[mask]);
         free(parent[mask]);
     }
     free(dp);
     free(parent);
+    printf("\nQHD+BMash");
+    writeResult(nameFileOut, result, *best, startNode);
+    return ;
 }
 
 // BACKTRACKING 
@@ -395,27 +429,52 @@ void NhanhCanh(int weight[__MAX_N][__MAX_N],int n, char nameIndex[__MAX_N], char
 //END TT
 
 int main(void) {
+    
+
     int weight[__MAX_N][__MAX_N], indexMap[__MAX_CHAR], n;
     char nameIndex[__MAX_N], startNode;
-    
-    readInput(nameFileIn, weight, indexMap, nameIndex, &n, &startNode);
-    printMatrix(weight, n);
-    kTraMTran(weight, n);
-
-    // QHD
     struct ResultWay *result = (struct ResultWay*)malloc(sizeof(struct ResultWay));
     result->next = NULL;
     int best;
-    solve_QDH_BMask(weight, n, nameIndex, startNode, &best, result);
+    readInput(nameFileIn, weight, indexMap, nameIndex, &n, &startNode);
+    printMatrix(weight, n);
+    kTraMTran(weight, n);
+    printMenu();
 
-    // BACKTRACKING
-    solve_backtracking(n, weight, indexMap, nameIndex, startNode);
-    
-    //Nhanh canh
-    struct ResultWay *result3 = (struct ResultWay*)malloc(sizeof(struct ResultWay));
-    result3->next = NULL;
-    int best1;
-    NhanhCanh(weight, n, nameIndex, startNode, &best1, result3);
-    
+    int choice;
+
+do {
+    printf("\n============= MENU =============\n");
+    printf("1. QHD + Bitmask\n");
+    printf("2. Backtracking (Quay lui)\n");
+    printf("3. Nhanh canh (Branch & Bound)\n");
+    printf("0. Thoat\n");
+    printf("================================\n");
+    printf("Nhap lua chon: ");
+    scanf("%d", &choice);
+
+    switch(choice) {
+        case 1: {
+                solve_QDH_BMask(weight, n, nameIndex, startNode, &best, result);
+                break;
+                }
+
+        case 2:
+                solve_backtracking(n, weight, indexMap, nameIndex, startNode);
+                break;
+        case 3: {
+            NhanhCanh(weight, n, nameIndex, startNode, &best, result);
+            break;
+        }
+
+        case 0:
+            printf("\nThoat chuong trinh.\n");
+            break;
+
+        default:
+            printf("\nLua chon khong hop le!\n");
+    }
+
+} while (choice != 0);    
     return 0;
 }
