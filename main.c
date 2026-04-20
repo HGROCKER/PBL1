@@ -32,6 +32,16 @@ void printMenu() {
     printf(CYAN "=============================================================\n\n" RESET);
 }
 
+void printMatrix(int weight[__MAX_N][__MAX_N], int n) {
+    printf("Ma tran trong so:\n");
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            printf("%4d ", weight[i][j]);
+        }
+        printf("\n");
+    }
+}
+
 void clearDataFile(char *filename){
     FILE *out = fopen(filename, "w");
     fclose(out);
@@ -44,7 +54,6 @@ struct ResultWay {
     char name;
     struct ResultWay* next;
 };
-
 
 void readInput(const char *filename, int weight[__MAX_N][__MAX_N], int indexMap[__MAX_CHAR], char nameIndex[__MAX_N], int *n, char *startNode) {
     FILE *file = fopen(filename, "r");
@@ -84,15 +93,17 @@ void readInput(const char *filename, int weight[__MAX_N][__MAX_N], int indexMap[
     fclose(file);
 }
 
-void writeResult(const char *filename, struct ResultWay* result, int best, char startNode) {
+void writeResult(const char *filename, struct ResultWay* result, int best, char startNode, const char *nameTypeSolve) {
     FILE *out = fopen(filename, "a");
     if (!out) out = stdout;
     
     if (best <= 0) {
-        fprintf(out, "\nKhong co chu trinh Hamilton bat dau tai %c\n", startNode);
-        printf("\nKhong co chu trinh Hamilton bat dau tai %c\n", startNode);
+        fprintf(out, "\nKhong co chu trinh di qua tat ca cac dinh \n");
+        printf("\nKhong co chu trinh di qua tat ca cac dinh \n");
     } else {        
         if (result) {
+            fprintf(out, "\nHanh trinh toi uu (%d mat) (%s): \n", best, nameTypeSolve);
+            printf("\nHanh trinh toi uu (%d diem) (%s):\n ", best, nameTypeSolve);
             while(result->name!=startNode)result=result->next;      
             do {
                 fprintf(out, "%c -> ", result->name);
@@ -179,7 +190,6 @@ void solve_QDH_BMask(int weight[__MAX_N][__MAX_N], int n, char nameIndex[__MAX_N
         }
     }
     if (last == -1) {
-        writeResult(nameFileOut, result, *best, startNode);
         for (mask = 0; mask <= fullMask; mask++) {
             free(dp[mask]);
             free(parent[mask]);
@@ -209,8 +219,6 @@ void solve_QDH_BMask(int weight[__MAX_N][__MAX_N], int n, char nameIndex[__MAX_N
     }
     free(dp);
     free(parent);
-    printf("\nQHD+BMash");
-    writeResult(nameFileOut, result, *best, startNode);
     return ;
 }
 
@@ -245,7 +253,7 @@ void Try(int i, int sum) {
     }
 }
 
-void solve_backtracking(int n, int weight[__MAX_N][__MAX_N], int indexMap[__MAX_CHAR], char nameIndex[__MAX_N], char startNode) {
+void solve_backtracking(int n, int weight[__MAX_N][__MAX_N], int indexMap[__MAX_CHAR], char nameIndex[__MAX_N] , char startNode, char *filename) {
     n_bt = n;
     w_bt = weight;
     best_bt = 0; count_best_bt = 0;
@@ -253,7 +261,7 @@ void solve_backtracking(int n, int weight[__MAX_N][__MAX_N], int indexMap[__MAX_
     x_bt[0] = indexMap[(unsigned char)startNode];
 
     Try(1, 0);
-    FILE *out = fopen( *nameFileOut,  "a");
+    FILE *out = fopen( filename,  "a");
     if(best_bt < 1) {
         fprintf(out,"Quay lui: Khong tim thay chu trinh.\n");
         printf("Quay lui: Khong tim thay chu trinh.\n");
@@ -264,10 +272,14 @@ void solve_backtracking(int n, int weight[__MAX_N][__MAX_N], int indexMap[__MAX_
 
     int i,j;
     for(i = 0; i < count_best_bt; i++) {
-        for(j = 0; j < n; j++) printf("%c -> ", nameIndex[best_path_bt[i][j]]);
+        for(j = 0; j < n; j++) {
+            fprintf(out,"%c -> ", nameIndex[best_path_bt[i][j]]);
+            printf("%c -> ", nameIndex[best_path_bt[i][j]]);
+        }
         fprintf(out,"%c\n", nameIndex[best_path_bt[i][0]]);
         printf("%c\n", nameIndex[best_path_bt[i][0]]);
     }
+    fclose(out);
 }
 
 //Nhanh canh
@@ -415,9 +427,7 @@ void NhanhCanh(int weight[__MAX_N][__MAX_N],int n, char nameIndex[__MAX_N], char
     cur_way->name = nameIndex[cur];
     cur_way->next = res;
     n++;
-
-    printf("\nNhanhCanh");
-    writeResult(nameFileOut,res,*best,startNode);
+    return ;
 
 }
 //END TT
@@ -448,15 +458,20 @@ do {
 
     switch(choice) {
         case 1: {
-                solve_QDH_BMask(weight, n, nameIndex, startNode, &best, result);
-                break;
-                }
+            printMatrix(weight,n);
+            solve_QDH_BMask(weight, n, nameIndex, startNode, &best, result);
+            writeResult(nameFileOut, result, best, startNode,"QDH+BitMask");
+            break;
+            }
 
         case 2:
-                solve_backtracking(n, weight, indexMap, nameIndex, startNode);
-                break;
+            printMatrix(weight,n);
+            solve_backtracking(n, weight, indexMap, nameIndex, startNode, nameFileOut);
+            break;
         case 3: {
             NhanhCanh(weight, n, nameIndex, startNode, &best, result);
+            printMatrix(weight,n);
+            writeResult(nameFileOut,result,best,startNode,"Nhanh Canh");
             break;
         }
 
