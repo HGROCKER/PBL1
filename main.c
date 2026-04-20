@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <time.h>
+#include <windows.h>
+
 
 #define __MAX_N 32
 #define __MAX_CHAR 256
 #define __MAX_Way 1000
 #define INF 1e9
+
 
 void printMenu() {
     #define RESET   "\033[0m"
@@ -455,32 +457,37 @@ do {
     printf("================================\n");
     printf("Nhap lua chon: ");
     scanf("%d", &choice);
-    clock_t start,time;
+    LARGE_INTEGER tic, toc, freq;
+    QueryPerformanceFrequency(&freq);
+
+
     switch(choice) {
         case 1: {
             printMatrix(weight,n);
-            start = clock();
+            QueryPerformanceCounter(&tic);
             solve_QDH_BMask(weight, n, nameIndex, startNode, &best, result);
-            time = clock() - start;
+            QueryPerformanceCounter(&toc);
             writeResult(nameFileOut, result, best, startNode,"QDH+BitMask");
-            printf("\nThoi gian thuc thi: %.4f giay voi %ld xung nhip CPU\n",(double)(time) / CLOCKS_PER_SEC, (long)time);
+            printf("Thoi gian chinh xac: %.6f ms (mili giay)\n", (double)(toc.QuadPart - tic.QuadPart) * 1000.0 / freq.QuadPart);
             break;
             }
 
         case 2:
             printMatrix(weight,n);
-            start = clock();
+
+            QueryPerformanceCounter(&tic);
             solve_backtracking(n, weight, indexMap, nameIndex, startNode, nameFileOut);
-            time = clock() - start;
-            printf("\nThoi gian thuc thi: %.4f giay voi %ld xung nhip CPU\n",(double)(time) / CLOCKS_PER_SEC, (long)time);
+            QueryPerformanceCounter(&toc);
+
+            printf("Thoi gian chinh xac: %.6f ms (mili giay)\n", (double)(toc.QuadPart - tic.QuadPart) * 1000.0 / freq.QuadPart);
             break;
+
         case 3: {
-            start = clock();
+            QueryPerformanceCounter(&tic);
             NhanhCanh(weight, n, nameIndex, startNode, &best, result);
-            time = clock() - start;
-            printMatrix(weight,n);
-            writeResult(nameFileOut,result,best,startNode,"Nhanh Canh");
-            printf("\nThoi gian thuc thi: %.4f giay voi %ld xung nhip CPU\n",(double)(time) / CLOCKS_PER_SEC, (long)time);
+            QueryPerformanceCounter(&toc);
+            writeResult(nameFileOut, result, best, startNode,"QDH+BitMask");
+            printf("Thoi gian chinh xac: %.6f ms (mili giay)\n", (double)(toc.QuadPart - tic.QuadPart) * 1000.0 / freq.QuadPart);
             break;
         }
 
