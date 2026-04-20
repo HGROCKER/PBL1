@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <limits.h>
+#include <time.h>
 
 #define __MAX_N 32
 #define __MAX_CHAR 256
@@ -455,23 +455,32 @@ do {
     printf("================================\n");
     printf("Nhap lua chon: ");
     scanf("%d", &choice);
-
+    clock_t start,time;
     switch(choice) {
         case 1: {
             printMatrix(weight,n);
+            start = clock();
             solve_QDH_BMask(weight, n, nameIndex, startNode, &best, result);
+            time = clock() - start;
             writeResult(nameFileOut, result, best, startNode,"QDH+BitMask");
+            printf("\nThoi gian thuc thi: %.4f giay voi %ld xung nhip CPU\n",(double)(time) / CLOCKS_PER_SEC, (long)time);
             break;
             }
 
         case 2:
             printMatrix(weight,n);
+            start = clock();
             solve_backtracking(n, weight, indexMap, nameIndex, startNode, nameFileOut);
+            time = clock() - start;
+            printf("\nThoi gian thuc thi: %.4f giay voi %ld xung nhip CPU\n",(double)(time) / CLOCKS_PER_SEC, (long)time);
             break;
         case 3: {
+            start = clock();
             NhanhCanh(weight, n, nameIndex, startNode, &best, result);
+            time = clock() - start;
             printMatrix(weight,n);
             writeResult(nameFileOut,result,best,startNode,"Nhanh Canh");
+            printf("\nThoi gian thuc thi: %.4f giay voi %ld xung nhip CPU\n",(double)(time) / CLOCKS_PER_SEC, (long)time);
             break;
         }
 
