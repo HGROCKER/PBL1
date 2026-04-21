@@ -121,6 +121,10 @@ void writeResult(const char *filename, struct ResultWay* result, int best, char 
 }
 
 void kTraMTran(int weight[__MAX_N][__MAX_N], int n) {
+    if (n < 3) {
+            printf("Khong co loi giai do khong du dinh de tao chu trinh (n phai >= 3)\n");
+            exit(1);
+    }
     int i,j,deg;
     for (i = 0; i < n; i++) {
         deg = 0;
@@ -135,7 +139,6 @@ void kTraMTran(int weight[__MAX_N][__MAX_N], int n) {
 }
 
 void solve_QDH_BMask(int weight[__MAX_N][__MAX_N], int n, char nameIndex[__MAX_N], char startNode, int *best, struct ResultWay *result) {
-    if (n < 3) {printf("Khong the tao chu trinh\n"); return ;}
     int fullMask = 1 << (n - 1), mask, j, k;
     int **dp = (int **)malloc(fullMask * sizeof(int *));
     int **parent = (int **)malloc(fullMask * sizeof(int *));
