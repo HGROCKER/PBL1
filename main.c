@@ -489,7 +489,7 @@ do {
             QueryPerformanceCounter(&tic);
             NhanhCanh(weight, n, nameIndex, startNode, &best, result);
             QueryPerformanceCounter(&toc);
-            writeResult(nameFileOut, result, best, startNode,"QDH+BitMask");
+            writeResult(nameFileOut, result, best, startNode,"Nhanh Canh");
             printf("Thoi gian chinh xac: %.6f ms (mili giay)\n", (double)(toc.QuadPart - tic.QuadPart) * 1000.0 / freq.QuadPart);
             break;
         }
