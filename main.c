@@ -372,7 +372,6 @@ void solve_backtracking(int n, int weight[__MAX_N][__MAX_N], int indexMap[__MAX_
 }
 
 //Nhanh canh
-//Nhanh canh
 int final_cost = INF;
 int best_edges[__MAX_N][2];
 int current_edges[__MAX_N][2];
