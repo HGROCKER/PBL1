@@ -135,8 +135,33 @@ void kTraMTran(int weight[__MAX_N][__MAX_N], int n) {
         }
     }
 }
+// Biến global cho QHD
+int show_steps_qhd = 0;
+int step_count_qhd = 0;
+int max_steps_qhd = 0;
+
+void print_dp_table(int **dp, int fullMask, int n, const char *title) {
+    if (!show_steps_qhd || step_count_qhd > max_steps_qhd) return;
+    printf("%s\n", title);
+    printf("    ");
+    for (int j = 0; j < n; j++) printf("%5d ", j);
+    printf("\n");
+    for (int mask = 0; mask <= fullMask; mask++) {
+        printf("%3d:", mask);
+        for (int j = 0; j < n; j++) {
+            if (dp[mask][j] == INT_MIN) printf(" -INF ");
+            else printf("%5d ", dp[mask][j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
 
 void solve_QDH_BMask(int weight[__MAX_N][__MAX_N], int n, char nameIndex[__MAX_N], char startNode, int *best, struct ResultWay *result, int choice) {
+    show_steps_qhd = choice;
+    step_count_qhd = 0;
+    max_steps_qhd = 0;
+    
     int fullMask = 1 << (n - 1), mask, j, k;
     int **dp = (int **)malloc(fullMask * sizeof(int *));
     int **parent = (int **)malloc(fullMask * sizeof(int *));
@@ -158,6 +183,7 @@ void solve_QDH_BMask(int weight[__MAX_N][__MAX_N], int n, char nameIndex[__MAX_N
         }
     }
 
+    // Khởi tạo
     for (j = 1; j < n; j++) {
         if (weight[0][j] > 0) {
             dp[1 << (j - 1)][j] = weight[0][j];
@@ -165,99 +191,123 @@ void solve_QDH_BMask(int weight[__MAX_N][__MAX_N], int n, char nameIndex[__MAX_N
         }
     }
     
-    mask = 0;
-    int countLoop = 0;
-    if(choice){
-        printf("\nKhoi tao bang dp[mask][i] {gia tri max qua cac dinh truong hop bit cua mask va ket thuc tai dinh i} " );
-        printf("\n V e!=(0,i) thuoc dp = INF ;\n e=(0,i) thuoc dp = weight[0][i]\n");
+    if (show_steps_qhd) {
+        printf("\n" YELLOW "=== PHUONG PHAP QHD + BITMASK ===" RESET "\n");
+        printf("Nhap so buoc toi da muon hien thi (0 = hien thi tat ca): ");
+        scanf("%d", &max_steps_qhd);
+        if (max_steps_qhd == 0) max_steps_qhd = INF;
         
-        printf("\nBat dau duyet dp[mask][] voi mask tu 00..00 toi 11..11 (0 toi 2^(n-1)-1) \n");
-        printf("Nhap so loop ban muon chay (so luong co the rat lon, toi da la %d):",fullMask);
-        scanf("%d",&countLoop);
-        if(countLoop>fullMask)countLoop=fullMask;
-
-        mask = 0;
-        for (mask; mask < countLoop; mask++) {
-            int nextMask, cand;
-            for (j = 1; j < n; j++) {
-                if (!(mask & (1 << (j - 1))) || dp[mask][j] == INT_MIN) continue;
-                printf("\nDang xet mask %d va dinh %c (gia tri dp[%d][%d] = %d)\n", mask, nameIndex[j], mask, j, dp[mask][j]);
-
-                for (k = 1; k < n; k++) {
-                    if (mask & (1 << (k - 1)) || weight[j][k] <= 0) continue;
-                    printf("  Dang xet dinh %c (gia tri canh tu %c den %c la %d)\n", nameIndex[k], nameIndex[j], nameIndex[k], weight[j][k]);
-                    nextMask = mask | (1 << (k - 1));
-                    cand = dp[mask][j] + weight[j][k];
-                    printf("Tu mask %d, dinh %c den %c: %d + %d = %d\n", mask, nameIndex[j], nameIndex[k], dp[mask][j], weight[j][k], cand);
-                    if (cand > dp[nextMask][k]) {
-                        dp[nextMask][k] = cand;
-                        printf("Cap nhat dp[%d][%d] = %d\n", nextMask, k, dp[nextMask][k]);
-                        parent[nextMask][k] = j;
-                    }
-                }
-                printf("Ket thuc xet dinh %c cho mask %d\n", nameIndex[j], mask);
+        printf("\nBuoc khoi tao: Dat dp[1<<(j-1)][j] = weight[0][j] cho cac dinh j tu 1 den %d\n", n - 1);
+        printf("Cac canh khoi tao:\n");
+        for (j = 1; j < n; j++) {
+            if (weight[0][j] > 0) {
+                printf("  Canh tu dinh 0 (%c) den dinh %d (%c): %d\n", nameIndex[0], j, nameIndex[j], weight[0][j]);
             }
-            printf("\nBang dp sau khi xet xong mask %d:\n", mask);
-            for (j = 0; j < n; j++) {
-                if (dp[mask][j] == INT_MIN) printf(" -INF ");
-                else printf("%5d ", dp[mask][j]);
-            }
-            printf("\n\n");
         }
+        print_dp_table(dp, 0, n, "Bang dp sau khoi tao:");
+        step_count_qhd++;
     }
     
-    for (mask; mask < fullMask; mask++) {
+    int countLoop = 0;
+    if (show_steps_qhd) {
+        printf("Tong so mask can tinh: %d (tu 1 den %d)\n", fullMask - 1, fullMask - 1);
+        printf("Nhap so mask ban muon hien thi (0 = hien thi tat ca): ");
+        scanf("%d", &countLoop);
+        if (countLoop > fullMask - 1) countLoop = fullMask - 1;
+        if (countLoop == 0) countLoop = fullMask - 1;
+    } else {
+        countLoop = fullMask;
+    }
+    
+    // Tính toán DP
+    for (mask = 1; mask < fullMask; mask++) {
         int nextMask, cand;
+        
+        if (show_steps_qhd && step_count_qhd <= max_steps_qhd && mask <= countLoop) {
+            printf("\nBuoc %d: Tinh toan cho mask = %d (", step_count_qhd, mask);
+            for (int b = n - 2; b >= 0; b--) {
+                if (mask & (1 << b)) printf("1");
+                else printf("0");
+            }
+            printf(")\n");
+            step_count_qhd++;
+        }
+        
         for (j = 1; j < n; j++) {
             if (!(mask & (1 << (j - 1))) || dp[mask][j] == INT_MIN) continue;
+            
+            if (show_steps_qhd && step_count_qhd <= max_steps_qhd && mask <= countLoop) {
+                printf("  Xet dinh %d (%c) voi dp[%d][%d] = %d\n", j, nameIndex[j], mask, j, dp[mask][j]);
+            }
+            
             for (k = 1; k < n; k++) {
                 if (mask & (1 << (k - 1)) || weight[j][k] <= 0) continue;
+                
                 nextMask = mask | (1 << (k - 1));
                 cand = dp[mask][j] + weight[j][k];
+                
+                if (show_steps_qhd && step_count_qhd <= max_steps_qhd && mask <= countLoop) {
+                    printf("    -> Dinh %d (%c): dp[%d][%d] + canh(%c->%c) = %d + %d = %d",
+                        k, nameIndex[k], mask, j, nameIndex[j], nameIndex[k], dp[mask][j], weight[j][k], cand);
+                }
+                
                 if (cand > dp[nextMask][k]) {
                     dp[nextMask][k] = cand;
                     parent[nextMask][k] = j;
+                    
+                    if (show_steps_qhd && step_count_qhd <= max_steps_qhd && mask <= countLoop) {
+                        printf(" [CAP NHAT]\n");
+                    }
+                } else {
+                    if (show_steps_qhd && step_count_qhd <= max_steps_qhd && mask <= countLoop) {
+                        printf(" [KHONG CAP NHAT]\n");
+                    }
                 }
             }
         }
+        
+        if (show_steps_qhd && step_count_qhd <= max_steps_qhd && mask <= countLoop) {
+            printf("  Ket thuc mask %d\n", mask);
+        }
     }
 
+    // Tìm kết quả tối ưu
     *best = -1;
     int last = -1, total;
     fullMask--;
-    if(choice){
-        printf("\nSau khi tinh xong bang dp, tim duong di tot nhat tu cac dinh j ve dinh 0 (voi j tu 1 den n-1) de hoan thanh chu trinh va cap nhat ket qua vao bien best neu tim thay duong di tot hon:\n");
-        for (j = 1; j < n; j++) {
-            if (dp[fullMask][j] == INT_MIN || weight[j][0] <= 0) {
-                printf("Dinh %c khong the tro ve dinh %c de hoan thanh chu trinh (dp[%d][%d] = %d, canh tu %c den %c = %d)\n", nameIndex[j], nameIndex[0], fullMask, j, dp[fullMask][j], nameIndex[j], nameIndex[0], weight[j][0]);
-                continue;
-            }
-            total = dp[fullMask][j] + weight[j][0];
-            printf("Duong di tu dinh %c den %c qua mask %d co gia tri: dp[%d][%d] + canh tu %c den %c = %d + %d = %d\n", nameIndex[j], nameIndex[0], fullMask, fullMask, j, dp[fullMask][j], nameIndex[j], nameIndex[0], dp[fullMask][j], weight[j][0], total);
-            if (total > *best) {
-                *best = total;
-                last = j;
-                printf("Cap nhat best = %d va last = %d\n", *best, last);
-            }
-        }
+    
+    if (show_steps_qhd) {
+        printf("\n" YELLOW "=== TIM DUONG DI TOI UU ===" RESET "\n");
+        printf("Xet toan bo cac duong di ket thuc tai dinh j va quay ve dinh 0:\n");
     }
-    else{
-        for (j = 1; j < n; j++) {
-            if (dp[fullMask][j] == INT_MIN || weight[j][0] <= 0) continue;
-            total = dp[fullMask][j] + weight[j][0];
-            if (total > *best) {
-                *best = total;
-                last = j;
+    
+    for (j = 1; j < n; j++) {
+        if (dp[fullMask][j] == INT_MIN || weight[j][0] <= 0) {
+            if (show_steps_qhd) {
+                printf("Dinh %d (%c): Khong the quay ve diem xuat phat (dp[%d][%d] = %d)\n",
+                    j, nameIndex[j], fullMask, j, dp[fullMask][j]);
             }
+            continue;
+        }
+        
+        total = dp[fullMask][j] + weight[j][0];
+        
+        if (show_steps_qhd) {
+            printf("Dinh %d (%c): dp[%d][%d] + canh(%c->%c) = %d + %d = %d",
+                j, nameIndex[j], fullMask, j, nameIndex[j], nameIndex[0], dp[fullMask][j], weight[j][0], total);
+        }
+        
+        if (total > *best) {
+            *best = total;
+            last = j;
+            if (show_steps_qhd) printf(" [TOI UU]\n");
+        } else {
+            if (show_steps_qhd) printf("\n");
         }
     }
 
-    if(choice){
-        if (*best == -1) {
-            printf("\nKhong tim thay chu trinh di qua tat ca cac dinh.\n");
-        } else {
-            printf("\nKet qua tim duoc: best = %d, last = %d (duong di tot nhat ket thuc tai dinh %c)\n", *best, last, nameIndex[last]);
-        }
+    if (show_steps_qhd) {
+        printf("\nKet qua: best = %d, last = %d (%c)\n", *best, last, last >= 0 ? nameIndex[last] : '?');
     }
 
     if (*best == -1) {
@@ -267,40 +317,37 @@ void solve_QDH_BMask(int weight[__MAX_N][__MAX_N], int n, char nameIndex[__MAX_N
         }
         free(dp);
         free(parent);
-        return ;
+        return;
     }
 
+    // Truy vết kết quả
     mask = fullMask;
-    result->name = nameIndex[0];;
+    result->name = nameIndex[0];
     struct ResultWay *current = result;
     int cur = last, temp;
 
-    if(choice){
-        printf("\nTruy vet ket qua tu last = %d va mask = %d de xay dung ket qua cuoi cung:\n", last, fullMask);
-            while (cur != 0) {
-                printf("Dinh %c duoc chon, parent[%d][%d] = %d (%c)\n", nameIndex[cur], mask, cur, parent[mask][cur], nameIndex[parent[mask][cur]]);
-                current->next = (struct ResultWay *)malloc(sizeof(struct ResultWay));
-                current = current->next;
-                current->name = nameIndex[cur];
-                temp = parent[mask][cur];
-                mask ^= (1 << (cur - 1));
-                cur = temp;
-            }
-            current->next = result;
-            
-    }
-    else{
-        while (cur != 0) {
-            current->next = (struct ResultWay *)malloc(sizeof(struct ResultWay));
-            current = current->next;
-            current->name = nameIndex[cur];
-            temp = parent[mask][cur];
-            mask ^= (1 << (cur - 1));
-            cur = temp;
-        }
-        current->next = result;
+    if (show_steps_qhd) {
+        printf("\n" YELLOW "=== TRUY VET KET QUA ===" RESET "\n");
+        printf("Bat dau tu dinh %d (%c), mask = %d\n", last, nameIndex[last], fullMask);
     }
     
+    while (cur != 0) {
+        if (show_steps_qhd) {
+            printf("Dinh %d (%c) <- parent[%d][%d] = %d (%c)\n",
+                cur, nameIndex[cur], mask, cur, parent[mask][cur], nameIndex[parent[mask][cur]]);
+        }
+        current->next = (struct ResultWay *)malloc(sizeof(struct ResultWay));
+        current = current->next;
+        current->name = nameIndex[cur];
+        temp = parent[mask][cur];
+        mask ^= (1 << (cur - 1));
+        cur = temp;
+    }
+    current->next = result;
+    
+    if (show_steps_qhd) {
+        printf("\nTruy vet hoan tat!\n");
+    }
     
     for (mask = 0; mask <= fullMask; mask++) {
         free(dp[mask]);
@@ -308,7 +355,8 @@ void solve_QDH_BMask(int weight[__MAX_N][__MAX_N], int n, char nameIndex[__MAX_N
     }
     free(dp);
     free(parent);
-    return ;
+    show_steps_qhd = 0;
+    return;
 }
 
 // BACKTRACKING 
@@ -371,6 +419,7 @@ void solve_backtracking(int n, int weight[__MAX_N][__MAX_N], int indexMap[__MAX_
     fclose(out);
 }
 
+//Nhanh canh
 //Nhanh canh
 int final_cost = INF;
 int best_edges[__MAX_N][2];
