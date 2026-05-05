@@ -359,67 +359,7 @@ void solve_QDH_BMask(int weight[__MAX_N][__MAX_N], int n, char nameIndex[__MAX_N
     return;
 }
 
-// BACKTRACKING 
-int visited_bt, x_bt[__MAX_N], n_bt;
-int (*w_bt)[__MAX_N];
-int best_bt = 0, best_path_bt[__MAX_Way][__MAX_N], count_best_bt = 0;
 
-void Try(int i, int sum) {
-    int v;
-    for(v = 0; v < n_bt; v++) {
-        if(!(visited_bt & (1 << v)) && w_bt[x_bt[i-1]][v] > 0) {
-            visited_bt |= (1 << v);
-            x_bt[i] = v;
-            int new_sum = sum + w_bt[x_bt[i-1]][v];
-            if(i == n_bt - 1) {
-                if(w_bt[v][x_bt[0]] > 0) {
-                    new_sum += w_bt[v][x_bt[0]];
-                    if(new_sum > best_bt) {
-                        best_bt = new_sum;
-                        count_best_bt = 0;
-                    }
-                    if(new_sum == best_bt && count_best_bt < __MAX_Way) {
-                        int j;
-                        for(j = 0; j < n_bt; j++) best_path_bt[count_best_bt][j] = x_bt[j];
-                        count_best_bt++;
-                    }
-                }
-            } else Try(i + 1, new_sum);
-            visited_bt ^= (1 << v);
-        }
-    }
-}
-
-void solve_backtracking(int n, int weight[__MAX_N][__MAX_N], int indexMap[__MAX_CHAR], char nameIndex[__MAX_N] , char startNode, char *filename, int choice) {
-    n_bt = n;
-    w_bt = weight;
-    best_bt = 0; count_best_bt = 0;
-    visited_bt = (1 << indexMap[(unsigned char)startNode]);
-    x_bt[0] = indexMap[(unsigned char)startNode];
-
-    Try(1, 0);
-    FILE *out = fopen( filename,  "a");
-    if(best_bt < 1) {
-        fprintf(out,"Quay lui: Khong tim thay chu trinh.\n");
-        printf("Quay lui: Khong tim thay chu trinh.\n");
-        return;
-    }
-    printf("\nQuay lui: Hanh trinh toi uu (%d diem)\n", best_bt);
-    fprintf(out,"\nQuay lui: Hanh trinh toi uu (%d diem)\n", best_bt);
-
-    int i,j;
-    for(i = 0; i < count_best_bt; i++) {
-        for(j = 0; j < n; j++) {
-            fprintf(out,"%c -> ", nameIndex[best_path_bt[i][j]]);
-            printf("%c -> ", nameIndex[best_path_bt[i][j]]);
-        }
-        fprintf(out,"%c\n", nameIndex[best_path_bt[i][0]]);
-        printf("%c\n", nameIndex[best_path_bt[i][0]]);
-    }
-    fclose(out);
-}
-
-//Nhanh canh
 //Nhanh canh
 int final_cost = INF;
 int best_edges[__MAX_N][2];
