@@ -79,7 +79,7 @@ void readInput(FILE *file, int weight[__MAX_N][__MAX_N], int indexMap[__MAX_CHAR
         int iu = indexMap[(unsigned char)u];
         int iv = indexMap[(unsigned char)v];
         if (weight[iu][iv] == -1 || w > weight[iu][iv]) {
-            weight[iu][iv] = weight[iv][iu] = w;
+            weight[iu][iv] = w;
         }
     }
     if(file != stdin){
@@ -121,6 +121,16 @@ void kTraMTran(int weight[__MAX_N][__MAX_N], int n) {
     for (i = 0; i < n; i++) {
         deg = 0;
         for (j = 0; j < n; j++) {
+            if (weight[i][j] != -1) deg++;
+        }
+        if (deg < 2) {
+            printf("Khong co loi giai do dinh %d khong du bac de tao chu trinh\n", i);
+            exit(1);
+        }
+    }
+    for (j = 0; j < n; i++) {
+        deg = 0;
+        for (i = 0; i < n; j++) {
             if (weight[i][j] != -1) deg++;
         }
         if (deg < 2) {
